@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+        "log"
+        "context"
 
-	etcdErrors "github.com/coreos/etcd/error"
-	"github.com/coreos/go-etcd/etcd"
+	"github.com/coreos/etcd/clientv3"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -25,18 +26,19 @@ func resourceKey() *schema.Resource {
 
 		Create: resourceKeySet,
 		Read:   resourceKeyRead,
-		Delete: resourceKeyDelete,
 		Update: resourceKeySet,
+		Delete: resourceKeyDelete,
 	}
 }
 
 func resourceKeySet(d *schema.ResourceData, meta interface{}) error {
-	api := meta.(*etcd.Client)
+	c := meta.(clientv3.Client)
+        kapi := clientv3.NewKV(&c)
 
 	key := d.Get("key").(string)
 	value := d.Get("value").(string)
 
-	_, err := api.Set(key, value, 0)
+        _, err := kapi.Put(context.Background(), key, value)
 	if err != nil {
 		return fmt.Errorf("could not set key %s: %s", key, err)
 	}
@@ -52,32 +54,39 @@ func resourceKeySet(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceKeyRead(d *schema.ResourceData, meta interface{}) error {
-	api := meta.(*etcd.Client)
+	c := meta.(clientv3.Client)
+        kapi := clientv3.NewKV(&c)
 
-	response, err := api.Get(d.Id(), false, false)
+        key := string(d.Id())
+	response, err := kapi.Get(context.Background(), key)
 	if err != nil {
-		if etcdErr, ok := err.(*etcd.EtcdError); ok &&
-			etcdErr.ErrorCode == etcdErrors.EcodeKeyNotFound {
-			d.SetId("")
-			return nil
-		}
-		return fmt.Errorf("could not read key %s: %s", d.Id(), err)
+		return fmt.Errorf("could not read key %s: %s", key, err)
 	}
-
-	if err := d.Set("key", response.Node.Key); err != nil {
-		return err
-	}
-	if err := d.Set("value", response.Node.Value); err != nil {
-		return err
-	}
-
-	return nil
+       
+        if response.Count <= 0 {
+                return fmt.Errorf("response was empty for key: %s", key)
+        }
+        for _, ev := range response.Kvs {
+                newKey := string(ev.Key)
+                newValue := string(ev.Value)
+                if newKey == key {
+                        if err := d.Set("key", newKey); err != nil {
+                                return err
+                        }
+	                if err := d.Set("value", newValue); err != nil {
+                                return err
+	                }
+                        return nil
+                }
+        }
+        return fmt.Errorf("No value was found for key: %s", key)
 }
 
 func resourceKeyDelete(d *schema.ResourceData, meta interface{}) error {
-	api := meta.(*etcd.Client)
+	c := meta.(clientv3.Client)
+        kapi := clientv3.NewKV(&c)
 
-	_, err := api.Delete(d.Id(), false)
+	_, err := kapi.Delete(context.Background(), d.Id())
 	if err != nil {
 		return fmt.Errorf("could not delete key %s: %s", d.Id(), err)
 	}

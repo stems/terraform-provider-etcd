@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/coreos/go-etcd/etcd"
+	"github.com/coreos/etcd/clientv3"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -12,11 +12,19 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"machines": &schema.Schema{
+			"endpoints": &schema.Schema{
 				Type:     schema.TypeList,
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+                        "username": &schema.Schema{
+                                Type: schema.TypeString,
+                                Required: true,
+                        },
+                        "password": &schema.Schema{
+                                Type: schema.TypeString,
+                                Required: true,
+                        },
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"etcd_key": resourceKey(),
@@ -26,12 +34,19 @@ func Provider() terraform.ResourceProvider {
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	ifMachines := d.Get("machines").([]interface{})
-	strMachines := make([]string, len(ifMachines))
-	for i, v := range ifMachines {
-		strMachines[i] = v.(string)
+	ifEndpoints := d.Get("endpoints").([]interface{})
+	strEndpoints := make([]string, len(ifEndpoints))
+	for i, v := range ifEndpoints {
+		strEndpoints[i] = v.(string)
 	}
 
-	api := etcd.NewClient(strMachines)
-	return api, nil
+	username := d.Get("username").(string)
+	password := d.Get("password").(string)
+        cfg := clientv3.Config{
+                Endpoints: strEndpoints,
+                Username: username,
+                Password: password,
+        }
+	c, err := clientv3.New(cfg)
+	return *c, err
 }
