@@ -1,4 +1,4 @@
-package main
+package etcd
 
 import (
 	"github.com/coreos/etcd/clientv3"
@@ -26,6 +26,9 @@ func Provider() terraform.ResourceProvider {
                                 Required: true,
                         },
 		},
+                DataSourcesMap: map[string]*schema.Resource{
+                        "etcd_json_kvs": dataSourceJsonKVs(),
+                },
 		ResourcesMap: map[string]*schema.Resource{
 			"etcd_key": resourceKey(),
 		},

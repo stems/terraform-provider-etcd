@@ -1,4 +1,4 @@
-package main
+package etcd
 
 import (
 	"context"
@@ -63,7 +63,13 @@ func resourceKeyRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if response.Count <= 0 {
-		return fmt.Errorf("response was empty for key: %s", key)
+                if err := d.Set("key", key); err != nil {
+                        return err
+                }
+                if err := d.Set("value", nil); err != nil {
+                        return err
+                }
+                return nil
 	}
 	for _, ev := range response.Kvs {
 		newKey := string(ev.Key)
