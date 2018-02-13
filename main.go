@@ -1,8 +1,8 @@
 package main
 
 import (
-        "github.com/stems/terraform-provider-etcd/etcd"
 	"github.com/hashicorp/terraform/plugin"
+	"github.com/stems/terraform-provider-etcd/etcd"
 )
 
 func main() {

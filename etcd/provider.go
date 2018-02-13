@@ -17,20 +17,20 @@ func Provider() terraform.ResourceProvider {
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-                        "username": &schema.Schema{
-                                Type: schema.TypeString,
-                                Default: "",
-                                Optional: true,
-                        },
-                        "password": &schema.Schema{
-                                Type: schema.TypeString,
-                                Default: "",
-                                Optional: true,
-                        },
+			"username": &schema.Schema{
+				Type:     schema.TypeString,
+				Default:  "",
+				Optional: true,
+			},
+			"password": &schema.Schema{
+				Type:     schema.TypeString,
+				Default:  "",
+				Optional: true,
+			},
 		},
-                DataSourcesMap: map[string]*schema.Resource{
-                        "etcd_json_kvs": dataSourceJsonKVs(),
-                },
+		DataSourcesMap: map[string]*schema.Resource{
+			"etcd_json_kvs": dataSourceJsonKVs(),
+		},
 		ResourcesMap: map[string]*schema.Resource{
 			"etcd_key": resourceKey(),
 		},
@@ -45,13 +45,14 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		strEndpoints[i] = v.(string)
 	}
 
-	//username := d.Get("username").(string)
-	//password := d.Get("password").(string)
-        cfg := client.Config{
-                Endpoints: strEndpoints,
-                //Username: username,
-                //Password: password,
-        }
+	username := d.Get("username").(string)
+	password := d.Get("password").(string)
+
+	cfg := client.Config{
+		Endpoints: strEndpoints,
+		Username:  username,
+		Password:  password,
+	}
 	c, err := client.New(cfg)
 	return c, err
 }
