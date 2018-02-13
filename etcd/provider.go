@@ -1,7 +1,7 @@
 package etcd
 
 import (
-	"github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/client"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -19,11 +19,13 @@ func Provider() terraform.ResourceProvider {
 			},
                         "username": &schema.Schema{
                                 Type: schema.TypeString,
-                                Required: true,
+                                Default: "",
+                                Optional: true,
                         },
                         "password": &schema.Schema{
                                 Type: schema.TypeString,
-                                Required: true,
+                                Default: "",
+                                Optional: true,
                         },
 		},
                 DataSourcesMap: map[string]*schema.Resource{
@@ -43,13 +45,13 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		strEndpoints[i] = v.(string)
 	}
 
-	username := d.Get("username").(string)
-	password := d.Get("password").(string)
-        cfg := clientv3.Config{
+	//username := d.Get("username").(string)
+	//password := d.Get("password").(string)
+        cfg := client.Config{
                 Endpoints: strEndpoints,
-                Username: username,
-                Password: password,
+                //Username: username,
+                //Password: password,
         }
-	c, err := clientv3.New(cfg)
-	return *c, err
+	c, err := client.New(cfg)
+	return c, err
 }

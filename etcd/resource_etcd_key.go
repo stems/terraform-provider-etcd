@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/client"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -31,13 +31,13 @@ func resourceKey() *schema.Resource {
 }
 
 func resourceKeySet(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(clientv3.Client)
-	kapi := clientv3.NewKV(&c)
+	c := meta.(client.Client)
+        kapi := client.NewKeysAPI(c)
 
 	key := d.Get("key").(string)
 	value := d.Get("value").(string)
 
-	_, err := kapi.Put(context.Background(), key, value)
+	_, err := kapi.Set(context.Background(), key, value, nil)
 	if err != nil {
 		return fmt.Errorf("could not set key %s: %s", key, err)
 	}
@@ -53,45 +53,29 @@ func resourceKeySet(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceKeyRead(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(clientv3.Client)
-	kapi := clientv3.NewKV(&c)
+	c := meta.(client.Client)
+        kapi := client.NewKeysAPI(c)
 
 	key := string(d.Id())
-	response, err := kapi.Get(context.Background(), key)
+	response, err := kapi.Get(context.Background(), key, nil)
 	if err != nil {
 		return fmt.Errorf("could not read key %s: %s", key, err)
 	}
 
-	if response.Count <= 0 {
-                if err := d.Set("key", key); err != nil {
-                        return err
-                }
-                if err := d.Set("value", nil); err != nil {
-                        return err
-                }
-                return nil
-	}
-	for _, ev := range response.Kvs {
-		newKey := string(ev.Key)
-		newValue := string(ev.Value)
-		if newKey == key {
-			if err := d.Set("key", newKey); err != nil {
-				return err
-			}
-			if err := d.Set("value", newValue); err != nil {
-				return err
-			}
-			return nil
-		}
-	}
-	return fmt.Errorf("No value was found for key: %s", key)
+        if err := d.Set("key", response.Node.Key); err != nil {
+                return err
+        }
+        if err := d.Set("value", response.Node.Value); err != nil {
+                return err
+        }
+        return nil
 }
 
 func resourceKeyDelete(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(clientv3.Client)
-	kapi := clientv3.NewKV(&c)
+	c := meta.(client.Client)
+        kapi := client.NewKeysAPI(c)
 
-	_, err := kapi.Delete(context.Background(), d.Id())
+	_, err := kapi.Delete(context.Background(), d.Id(), nil)
 	if err != nil {
 		return fmt.Errorf("could not delete key %s: %s", d.Id(), err)
 	}
