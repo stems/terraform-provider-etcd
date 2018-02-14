@@ -72,7 +72,9 @@ func resourceKeyRead(d *schema.ResourceData, meta interface{}) error {
 	key := string(d.Id())
 	response, err := kapi.Get(context.Background(), key, nil)
 	if err != nil {
-		return fmt.Errorf("could not read key %s: %s", key, err)
+                d.SetId("")
+                return nil
+		//return fmt.Errorf("could not read key %s: %s", key, err)
 	}
 
         if err := d.Set("key", response.Node.Key); err != nil {
