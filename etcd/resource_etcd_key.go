@@ -42,11 +42,24 @@ func resourceKeySet(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("could not set key %s: %s", key, err)
 	}
 
-	d.SetId(key)
-	if err := d.Set("key", key); err != nil {
+        // fetch the value back - this normalizes the key with leading slash
+	response, err := kapi.Get(context.Background(), key, nil)
+	if err != nil {
+		return fmt.Errorf("could not read key %s: %s", key, err)
+	}
+
+        if err := d.Set("key", response.Node.Key); err != nil {
+                return err
+        }
+        if err := d.Set("value", response.Node.Value); err != nil {
+                return err
+        }
+
+	d.SetId(response.Node.Key)
+	if err := d.Set("key", response.Node.Key); err != nil {
 		return err
 	}
-	if err := d.Set("value", value); err != nil {
+	if err := d.Set("value", response.Node.Value); err != nil {
 		return err
 	}
 	return nil
